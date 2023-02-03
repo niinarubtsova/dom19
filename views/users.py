@@ -1,68 +1,50 @@
 from flask import request
 from flask_restx import Resource, Namespace
 
-from helpers import *
-from models import Movie, MovieSchema
+from models import User, UserSchema
 from setup_db import db
 
-movie_ns = Namespace('movies')
+user_ns = Namespace('users')
 
 
-@movie_ns.route('/')
-class MoviesView(Resource):
-    @auth_required
+@user_ns.route('/')
+class UsersView(Resource):
     def get(self):
-        director = request.args.get("director_id")
-        genre = request.args.get("genre_id")
-        year = request.args.get("year")
-        t = db.session.query(Movie)
-        if director is not None:
-            t = t.filter(Movie.director_id == director)
-        if genre is not None:
-            t = t.filter(Movie.genre_id == genre)
-        if year is not None:
-            t = t.filter(Movie.year == year)
-        all_movies = t.all()
-        res = MovieSchema(many=True).dump(all_movies)
+        rs = db.session.query(User).all()
+        res = UserSchema(many=True).dump(rs)
         return res, 200
 
-    @admin_required
     def post(self):
         req_json = request.json
-        ent = Movie(**req_json)
+        ent = User(**req_json)
 
         db.session.add(ent)
         db.session.commit()
-        return "", 201, {"location": f"/movies/{ent.id}"}
+        return "", 201, {"location": f"/users/{ent.id}"}
 
 
-@movie_ns.route('/<int:bid>')
-class MovieView(Resource):
-    @auth_required
-    def get(self, bid):
-        b = db.session.query(Movie).get(bid)
-        sm_d = MovieSchema().dump(b)
+@user_ns.route('/<int:rid>')
+class UserView(Resource):
+    def get(self, rid):
+        r = db.session.query(User).get(rid)
+        sm_d = UserSchema().dump(r)
         return sm_d, 200
 
-    @admin_required
-    def put(self, bid):
-        movie = db.session.query(Movie).get(bid)
+    def put(self, rid):
+        user = db.session.query(User).get(rid)
         req_json = request.json
-        movie.title = req_json.get("title")
-        movie.description = req_json.get("description")
-        movie.trailer = req_json.get("trailer")
-        movie.year = req_json.get("year")
-        movie.rating = req_json.get("rating")
-        movie.genre_id = req_json.get("genre_id")
-        movie.director_id = req_json.get("director_id")
-        db.session.add(movie)
+        user.name = req_json.get("name")
+        user.password = req_json.get("password")
+        user.password = user.get_hash()
+        user.role = req_json.get("role")
+
+        db.session.add(user)
         db.session.commit()
         return "", 204
 
-    @admin_required
-    def delete(self, bid):
-        movie = db.session.query(Movie).get(bid)
+    def delete(self, rid):
+        user = db.session.query(User).get(rid)
 
-        db.session.delete(movie)
+        db.session.delete(user)
         db.session.commit()
         return "", 204
