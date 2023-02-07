@@ -1,30 +1,14 @@
-from dao.model.genre import Genre
+from marshmallow import Schema, fields
+
+from setup_db import db
 
 
-class GenreDAO:
-    def __init__(self, session):
-        self.session = session
+class Genre(db.Model):
+    __tablename__ = 'genre'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
 
-    def get_one(self, bid):
-        return self.session.query(Genre).get(bid)
 
-    def get_all(self):
-        return self.session.query(Genre).all()
-
-    def create(self, genre_d):
-        ent = Genre(**genre_d)
-        self.session.add(ent)
-        self.session.commit()
-        return ent
-
-    def delete(self, rid):
-        genre = self.get_one(rid)
-        self.session.delete(genre)
-        self.session.commit()
-
-    def update(self, genre_d):
-        genre = self.get_one(genre_d.get("id"))
-        genre.name = genre_d.get("name")
-
-        self.session.add(genre)
-        self.session.commit()
+class GenreSchema(Schema):
+    id = fields.Int()
+    name = fields.Str()
