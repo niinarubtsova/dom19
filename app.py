@@ -20,26 +20,18 @@ def create_app(config_object):
 def register_extensions(app):
     db.init_app(app)
     api = Api(app)
-    api.add_namespace(auth_ns)
     api.add_namespace(director_ns)
     api.add_namespace(genre_ns)
     api.add_namespace(movie_ns)
     api.add_namespace(user_ns)
-
+    api.add_namespace(auth_ns)
 
 #     create_data(app, db)
 #
-# from models import User
+#
 # def create_data(app, db):
 #     with app.app_context():
 #         db.create_all()
-#
-#         u1 = User(username="vasya", password="my_little_pony", role="user")
-#         u2 = User(username="misha", password="qwerty", role="user")
-#         u3 = User(username="oleg", password="P@ssw0rd", role="admin")
-#
-#         with db.session.begin():
-#             db.session.add_all([u1, u2, u3])
 
 
 app = create_app(Config())

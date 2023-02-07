@@ -1,9 +1,9 @@
 from flask import request
 from flask_restx import Resource, Namespace
 
-from helpers import *
-from models import Genre, GenreSchema
-from setup_db import db
+from dao.model.genre import GenreSchema
+from helpers import auth_required, admin_required
+from implemented import genre_service
 
 genre_ns = Namespace('genres')
 
@@ -12,42 +12,34 @@ genre_ns = Namespace('genres')
 class GenresView(Resource):
     @auth_required
     def get(self):
-        rs = db.session.query(Genre).all()
+        rs = genre_service.get_all()
         res = GenreSchema(many=True).dump(rs)
         return res, 200
 
     @admin_required
     def post(self):
         req_json = request.json
-        ent = Genre(**req_json)
-
-        db.session.add(ent)
-        db.session.commit()
-        return "", 201, {"location": f"/genres/{ent.id}"}
+        genre = genre_service.create(req_json)
+        return "", 201, {"location": f"/genres/{genre.id}"}
 
 
 @genre_ns.route('/<int:rid>')
 class GenreView(Resource):
     @auth_required
     def get(self, rid):
-        r = db.session.query(Genre).get(rid)
+        r = genre_service.get_one(rid)
         sm_d = GenreSchema().dump(r)
         return sm_d, 200
 
     @admin_required
     def put(self, rid):
-        genre = db.session.query(Genre).get(rid)
         req_json = request.json
-        genre.name = req_json.get("name")
-
-        db.session.add(genre)
-        db.session.commit()
+        if "id" not in req_json:
+            req_json["id"] = rid
+        genre_service.update(req_json)
         return "", 204
 
     @admin_required
     def delete(self, rid):
-        genre = db.session.query(Genre).get(rid)
-
-        db.session.delete(genre)
-        db.session.commit()
+        genre_service.delete(rid)
         return "", 204

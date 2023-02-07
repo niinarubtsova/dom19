@@ -1,8 +1,8 @@
 from flask import request
 from flask_restx import Resource, Namespace
 
-from models import User, UserSchema
-from setup_db import db
+from dao.model.user import UserSchema
+from implemented import user_service
 
 user_ns = Namespace('users')
 
@@ -10,41 +10,31 @@ user_ns = Namespace('users')
 @user_ns.route('/')
 class UsersView(Resource):
     def get(self):
-        rs = db.session.query(User).all()
-        res = UserSchema(many=True).dump(rs)
+        all_users = user_service.get_all()
+        res = UserSchema(many=True).dump(all_users)
         return res, 200
 
     def post(self):
         req_json = request.json
-        ent = User(**req_json)
-
-        db.session.add(ent)
-        db.session.commit()
-        return "", 201, {"location": f"/users/{ent.id}"}
+        user = user_service.create(req_json)
+        return "", 201, {"location": f"/users/{user.id}"}
 
 
 @user_ns.route('/<int:rid>')
 class UserView(Resource):
     def get(self, rid):
-        r = db.session.query(User).get(rid)
+        r = user_service.get_one(rid)
         sm_d = UserSchema().dump(r)
         return sm_d, 200
 
     def put(self, rid):
-        user = db.session.query(User).get(rid)
         req_json = request.json
-        user.name = req_json.get("name")
-        user.password = req_json.get("password")
-        user.password = user.get_hash()
-        user.role = req_json.get("role")
+        if "id" not in req_json:
+            req_json["id"] = rid
 
-        db.session.add(user)
-        db.session.commit()
+        user_service.update(req_json)
         return "", 204
 
-    def delete(self, rid):
-        user = db.session.query(User).get(rid)
-
-        db.session.delete(user)
-        db.session.commit()
+    def delete(self, bid):
+        user_service.delete(bid)
         return "", 204
